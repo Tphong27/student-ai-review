@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import ChatMessage from '../components/ChatMessage'
+import QuizPanel from '../components/QuizPanel'
 import { getQuickActionPrompt, sendChatMessage } from '../services/chatService'
 
 const grades = ['Lớp 10', 'Lớp 11', 'Lớp 12']
@@ -8,6 +9,7 @@ const subjects = ['Toán', 'Ngữ văn', 'Tiếng Anh', 'Vật lý', 'Hóa học
 const quickActions = ['Tóm tắt chủ đề', 'Giải thích dễ hiểu', 'Tạo 5 câu trắc nghiệm']
 
 function ChatPage() {
+  const [mode, setMode] = useState('chat')
   const [grade, setGrade] = useState('')
   const [subject, setSubject] = useState('')
   const [topic, setTopic] = useState('')
@@ -26,6 +28,7 @@ function ChatPage() {
   const messageInputRef = useRef(null)
 
   const canSend = grade && subject && message.trim() && !isLoading
+  const isQuizMode = mode === 'quiz'
 
   useEffect(() => {
     conversationEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -87,7 +90,16 @@ function ChatPage() {
   }
 
   function handleQuickAction(action) {
+    if (action === 'Tạo 5 câu trắc nghiệm') {
+      setMode('quiz')
+      return
+    }
+
     submitMessage(action, { requestMessage: getQuickActionPrompt(action) })
+  }
+
+  function handleBackToChat() {
+    setMode('chat')
   }
 
   function handleRetry() {
@@ -216,21 +228,28 @@ function ChatPage() {
             </footer>
           </aside>
 
-          <section className="workspace-panel" aria-labelledby="chat-title">
+          <section className="workspace-panel" aria-labelledby="workspace-title">
             <header className="conversation-header">
               <div>
-                <p className="section-kicker">Trợ lý học tập</p>
-                <h2 id="chat-title">Trò chuyện cùng StudyMate</h2>
+                <p className="section-kicker">{isQuizMode ? 'LUYỆN TẬP' : 'Trợ lý học tập'}</p>
+                <h2 id="workspace-title">{isQuizMode ? 'Tạo bộ câu hỏi ôn tập' : 'StudyMate AI'}</h2>
+                {!isQuizMode && <p className="workspace-copy">Chọn lớp, môn học rồi đặt câu hỏi để bắt đầu ôn tập.</p>}
               </div>
-              <div className="conversation-state">
-                <span className="state-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6a2.5 2.5 0 0 1-2.5 2.5h-5.2L7 18.5v-3.7a2.5 2.5 0 0 1-2-2.4v-5.9Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-                    <path d="M8.5 8.5h7M8.5 11.5h4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-                  </svg>
-                </span>
-                <span>Học qua hội thoại</span>
-              </div>
+              {isQuizMode ? (
+                <button type="button" className="back-to-chat-button" onClick={handleBackToChat}>
+                  ← Quay lại hỏi đáp
+                </button>
+              ) : (
+                <div className="conversation-state">
+                  <span className="state-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6a2.5 2.5 0 0 1-2.5 2.5h-5.2L7 18.5v-3.7a2.5 2.5 0 0 1-2-2.4v-5.9Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+                      <path d="M8.5 8.5h7M8.5 11.5h4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  <span>Học qua hội thoại</span>
+                </div>
+              )}
             </header>
 
             <div className="conversation-context" aria-label="Bối cảnh hiện tại">
@@ -239,75 +258,81 @@ function ChatPage() {
               {topic.trim() && <span className="context-chip context-chip-topic">Chủ đề: {topic}</span>}
             </div>
 
-            <section className="quick-actions" aria-label="Hành động nhanh">
-              <p className="quick-actions-label">Bắt đầu nhanh</p>
-              <div className="quick-action-list">
-                {quickActions.map((action) => (
-                  <button className="quick-action" key={action} type="button" onClick={() => handleQuickAction(action)} disabled={isLoading}>
-                    <span className="quick-action-icon" aria-hidden="true">
-                      {action === 'Tóm tắt chủ đề' && (
-                        <svg viewBox="0 0 24 24" fill="none"><path d="M7 4.5h7l3 3v12H7a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="M14 4.5v3h3M9 11h6M9 14h6M9 17h3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>
-                      )}
-                      {action === 'Giải thích dễ hiểu' && (
-                        <svg viewBox="0 0 24 24" fill="none"><path d="M9.2 18.2h5.6M9.8 21h4.4M8.1 14.9a6 6 0 1 1 7.8 0c-.8.6-1.1 1.3-1.1 2.3H9.2c0-1-.3-1.7-1.1-2.3Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                      )}
-                      {action === 'Tạo 5 câu trắc nghiệm' && (
-                        <svg viewBox="0 0 24 24" fill="none"><path d="M7 4.5h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="m9 9 1.2 1.2L12 8.5M13.5 9H16M9 14l1.2 1.2 1.8-1.7M13.5 14H16" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                      )}
-                    </span>
-                    <span>{action}</span>
-                  </button>
-                ))}
-              </div>
+            <section className="mode-panel" hidden={isQuizMode} aria-label="Hỏi đáp với StudyMate AI">
+                <section className="quick-actions" aria-label="Hành động nhanh">
+                  <p className="quick-actions-label">Bắt đầu nhanh</p>
+                  <div className="quick-action-list">
+                    {quickActions.map((action) => (
+                      <button className="quick-action" key={action} type="button" onClick={() => handleQuickAction(action)} disabled={isLoading}>
+                        <span className="quick-action-icon" aria-hidden="true">
+                          {action === 'Tóm tắt chủ đề' && (
+                            <svg viewBox="0 0 24 24" fill="none"><path d="M7 4.5h7l3 3v12H7a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="M14 4.5v3h3M9 11h6M9 14h6M9 17h3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" /></svg>
+                          )}
+                          {action === 'Giải thích dễ hiểu' && (
+                            <svg viewBox="0 0 24 24" fill="none"><path d="M9.2 18.2h5.6M9.8 21h4.4M8.1 14.9a6 6 0 1 1 7.8 0c-.8.6-1.1 1.3-1.1 2.3H9.2c0-1-.3-1.7-1.1-2.3Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          )}
+                          {action === 'Tạo 5 câu trắc nghiệm' && (
+                            <svg viewBox="0 0 24 24" fill="none"><path d="M7 4.5h10a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" /><path d="m9 9 1.2 1.2L12 8.5M13.5 9H16M9 14l1.2 1.2 1.8-1.7M13.5 14H16" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                          )}
+                        </span>
+                        <span>{action}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                {error && (
+                  <div className="error-message" role="alert">
+                    <span className="error-icon" aria-hidden="true">!</span>
+                    <span>{error}</span>
+                    <button className="retry-button" type="button" onClick={handleRetry} disabled={isLoading || !retryRequest}>
+                      Thử lại
+                    </button>
+                  </div>
+                )}
+
+                <section className="conversation" aria-label="Cuộc trò chuyện" aria-live="polite" aria-busy={isLoading}>
+                  {messages.map((chatMessage) => (
+                    <ChatMessage key={chatMessage.id} message={chatMessage} />
+                  ))}
+                  {isLoading && <ChatMessage message={{ sender: 'ai', text: 'StudyMate AI đang soạn câu trả lời...', isLoading: true }} />}
+                  <div ref={conversationEndRef} aria-hidden="true" />
+                </section>
+
+                <form className="message-form" onSubmit={handleSubmit} aria-label="Gửi câu hỏi">
+                  <div className="composer-field">
+                    <label className="sr-only" htmlFor="message-input">
+                      Nhập câu hỏi
+                    </label>
+                    <textarea
+                      id="message-input"
+                      ref={messageInputRef}
+                      value={message}
+                      onChange={handleMessageChange}
+                      onKeyDown={handleMessageKeyDown}
+                      placeholder="Bạn muốn ôn tập điều gì hôm nay?"
+                      disabled={isLoading}
+                      autoComplete="off"
+                      enterKeyHint="send"
+                      aria-describedby="message-help"
+                      rows="2"
+                    />
+                    <div className="composer-actions">
+                      <span className="composer-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+                      </span>
+                      <p className="composer-help" id="message-help">Enter để gửi · Shift + Enter để xuống dòng</p>
+                      <button className="message-submit" type="submit" disabled={!canSend} aria-label="Gửi câu hỏi">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 14-7-4.5 14-3-6-6.5-1Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /><path d="m11.5 13 7.5-8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                </form>
             </section>
 
-            {error && (
-              <div className="error-message" role="alert">
-                <span className="error-icon" aria-hidden="true">!</span>
-                <span>{error}</span>
-                <button className="retry-button" type="button" onClick={handleRetry} disabled={isLoading || !retryRequest}>
-                  Thử lại
-                </button>
-              </div>
-            )}
-
-            <section className="conversation" aria-label="Cuộc trò chuyện" aria-live="polite" aria-busy={isLoading}>
-              {messages.map((chatMessage) => (
-                <ChatMessage key={chatMessage.id} message={chatMessage} />
-              ))}
-              {isLoading && <ChatMessage message={{ sender: 'ai', text: 'StudyMate AI đang soạn câu trả lời...', isLoading: true }} />}
-              <div ref={conversationEndRef} aria-hidden="true" />
-            </section>
-
-            <form className="message-form" onSubmit={handleSubmit} aria-label="Gửi câu hỏi">
-              <div className="composer-field">
-                <label className="sr-only" htmlFor="message-input">
-                  Nhập câu hỏi
-                </label>
-                <textarea
-                  id="message-input"
-                  ref={messageInputRef}
-                  value={message}
-                  onChange={handleMessageChange}
-                  onKeyDown={handleMessageKeyDown}
-                  placeholder="Bạn muốn ôn tập điều gì hôm nay?"
-                  disabled={isLoading}
-                  autoComplete="off"
-                  enterKeyHint="send"
-                  aria-describedby="message-help"
-                  rows="2"
-                />
-                <div className="composer-actions">
-                  <span className="composer-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
-                  </span>
-                  <p className="composer-help" id="message-help">Enter để gửi · Shift + Enter để xuống dòng</p>
-                  <button className="message-submit" type="submit" disabled={!canSend} aria-label="Gửi câu hỏi">
-                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12 14-7-4.5 14-3-6-6.5-1Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /><path d="m11.5 13 7.5-8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
-                  </button>
-                </div>
-              </div>
-            </form>
+            <div className="mode-panel" hidden={!isQuizMode}>
+              <QuizPanel grade={grade} subject={subject} topic={topic} />
+            </div>
           </section>
         </div>
       </div>
